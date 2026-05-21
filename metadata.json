@@ -1,0 +1,6 @@
+{
+  "name": "PrepTrack",
+  "description": "Your JEE preparation Tracker",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+/* Frosted Glass Theme Selection Overrides */
+.theme-glass {
+  --primary: #6366f1;
+}
+
+.theme-glass .bg-card,
+.theme-glass .bg-[#0c1220],
+.theme-glass .bg-[#05140e],
+.theme-glass .bg-white {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(22px) saturate(110%);
+  -webkit-backdrop-filter: blur(22px) saturate(110%);
+  color: #f8fafc !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.theme-glass .border,
+.theme-glass .border-slate-800,
+.theme-glass .border-slate-200,
+.theme-glass .border-emerald-500\/15 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.theme-glass .bg-accent\/10,
+.theme-glass .bg-accent\/15,
+.theme-glass .bg-accent\/20,
+.theme-glass .bg-accent\/30,
+.theme-glass .text-slate-100 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.theme-glass .text-muted-foreground,
+.theme-glass .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.theme-glass .text-foreground,
+.theme-glass h1,
+.theme-glass h2,
+.theme-glass h3,
+.theme-glass h4,
+.theme-glass h5,
+.theme-glass span {
+  color: #f8fafc;
+}
+
+/* Custom fade integrations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modern minimalist, system-style overlay scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.22);
+  border-radius: 9999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.4);
+}
+
+/* Native styling for Firefox with thin track */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.22) transparent;
+}
+
+/* Adaptive styles for dark/colored themes so they match perfectly */
+.theme-glass ::-webkit-scrollbar-thumb,
+.bg-\[\#0b0f19\] ::-webkit-scrollbar-thumb,
+.bg-\[\#03140d\] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-glass ::-webkit-scrollbar-thumb:hover,
+.bg-\[\#0b0f19\] ::-webkit-scrollbar-thumb:hover,
+.bg-\[\#03140d\] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.theme-glass,
+.bg-\[\#0b0f19\],
+.bg-\[\#03140d\] {
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+/* Scrollbar hiding helper */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
