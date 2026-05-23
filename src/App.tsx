@@ -66,6 +66,20 @@ export default function App() {
   const [dbLoading, setDbLoading] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Local settings fields to allow clean text deleting
+  const [localWorkDuration, setLocalWorkDuration] = useState<string>('25');
+  const [localBreakDuration, setLocalBreakDuration] = useState<string>('5');
+  const [localStudyGoal, setLocalStudyGoal] = useState<string>('3');
+  const [localQuestionGoal, setLocalQuestionGoal] = useState<string>('30');
+
+  // Synchronize local input state when db settings load/change
+  useEffect(() => {
+    setLocalWorkDuration(settings.pomodoroWorkDuration?.toString() || '25');
+    setLocalBreakDuration(settings.pomodoroBreakDuration?.toString() || '5');
+    setLocalStudyGoal(((settings.dailyStudyMinutesGoal ?? 180) / 60).toString());
+    setLocalQuestionGoal((settings.dailyQuestionsSolvedGoal ?? 30).toString());
+  }, [settings.pomodoroWorkDuration, settings.pomodoroBreakDuration, settings.dailyStudyMinutesGoal, settings.dailyQuestionsSolvedGoal]);
+
   // Load database files
   useEffect(() => {
     async function initDB() {
@@ -654,51 +668,48 @@ export default function App() {
 
         {/* --- DYNAMIC RENDER OF THEMES OR TABS --- */}
         <div className="space-y-8">
-          <AnimatePresence mode="wait">
+          {/* Keep Dashboard always mounted to preserve active running stopwatch and avoid resetting */}
+          <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
             <motion.div
-              key={activeTab}
               initial={{ opacity: 0, y: 15, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -15, filter: 'blur(4px)' }}
+              animate={activeTab === 'dashboard' ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-8"
             >
-              {/* TAB 1: DASHBOARD (Stopwatch + Fast Quick Actions) */}
-              {activeTab === 'dashboard' && (
-                <div className="space-y-8">
-                  
-                  {/* Dynamic header welcome banner now displayed ONLY inside dashboard workspace */}
-                  <div className={`p-6 md:p-8 rounded-3xl bg-gradient-to-r ${themeStyles.bannerGradient} text-white shadow-lg space-y-3 relative overflow-hidden animate-fade-in`}>
-                    {/* Subtle logo background */}
-                    <div className="absolute right-0 bottom-0 opacity-12 translate-x-12 translate-y-12 select-none pointer-events-none">
-                      <BrandingLogo size={280} />
-                    </div>
+              <div className="space-y-8">
+                
+                {/* Dynamic header welcome banner now displayed ONLY inside dashboard workspace */}
+                <div className={`p-6 md:p-8 rounded-3xl bg-gradient-to-r ${themeStyles.bannerGradient} text-white shadow-lg space-y-3 relative overflow-hidden animate-fade-in`}>
+                  {/* Subtle logo background */}
+                  <div className="absolute right-0 bottom-0 opacity-12 translate-x-12 translate-y-12 select-none pointer-events-none">
+                    <BrandingLogo size={280} />
+                  </div>
 
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-150 bg-white/10 px-2.5 py-1 rounded-full w-max">
-                        JEE Preparation Companion • Pure & Focused Tracker
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-150 bg-white/10 px-2.5 py-1 rounded-full w-max">
+                      JEE Preparation Companion • Pure & Focused Tracker
+                    </span>
+                    <h2 className="text-2xl md:text-3xl font-display font-black leading-tight tracking-tight">Focus. Track. Crack JEE.</h2>
+                    <p className="text-xs text-indigo-100 max-w-xl font-medium leading-relaxed">
+                      A comprehensive, elegant workspace to track study hours, practice questions, and chapter progress for JEE Main & Advanced.
+                    </p>
+                  </div>
+
+                  {/* PCM Fast stats panel */}
+                  <div className="pt-4 grid grid-cols-4 gap-2 md:gap-4 max-w-lg">
+                    <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl text-center border border-white/5 shadow-sm relative group" title="Today's focused study minutes translated to hours (resets daily)">
+                      <span className="block text-[9px] uppercase font-bold text-indigo-150">Study Hrs (Today)</span>
+                      <span className="text-base font-bold font-mono tracking-tight text-white mt-1 block">
+                        {(studyMinutesToday / 60).toFixed(1)}h
                       </span>
-                      <h2 className="text-2xl md:text-3xl font-display font-black leading-tight tracking-tight">Focus. Track. Crack JEE.</h2>
-                      <p className="text-xs text-indigo-100 max-w-xl font-medium leading-relaxed">
-                        A comprehensive, elegant workspace to track study hours, practice questions, and chapter progress for JEE Main & Advanced.
-                      </p>
                     </div>
 
-                    {/* PCM Fast stats panel */}
-                    <div className="pt-4 grid grid-cols-4 gap-2 md:gap-4 max-w-lg">
-                      <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl text-center border border-white/5 shadow-sm">
-                        <span className="block text-[9px] uppercase font-bold text-indigo-150">Study Hrs</span>
-                        <span className="text-base font-bold font-mono tracking-tight text-white mt-1">
-                          {(sessions.reduce((acc, s) => acc + s.duration, 0) / 3600).toFixed(1)}h
-                        </span>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl text-center border border-white/5 shadow-sm">
-                        <span className="block text-[9px] uppercase font-bold text-indigo-150">Qs Solved</span>
-                        <span className="text-base font-bold font-mono tracking-tight text-white mt-1">
-                          {questionAggregatess.totalSolved}
-                        </span>
-                      </div>
+                    <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl text-center border border-white/5 shadow-sm relative group" title="Today's total questions solved (resets daily)">
+                      <span className="block text-[9px] uppercase font-bold text-indigo-150">Qs Solved (Today)</span>
+                      <span className="text-base font-bold font-mono tracking-tight text-white mt-1 block">
+                        {questionsSolvedToday}
+                      </span>
+                    </div>
 
                       <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl text-center border border-white/5 shadow-sm">
                         <span className="block text-[9px] uppercase font-bold text-indigo-150">NCERT Done</span>
@@ -1107,10 +1118,21 @@ export default function App() {
                   </div>
 
                 </div>
-              )}
+            </motion.div>
+          </div>
 
-              {/* TAB 2: PROGRESS HISTORY & BAR CHARTS */}
-              {activeTab === 'analytics' && (
+          <AnimatePresence mode="wait">
+            {activeTab !== 'dashboard' && (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 15, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -15, filter: 'blur(4px)' }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-8"
+              >
+                {/* TAB 2: PROGRESS HISTORY & BAR CHARTS */}
+                {activeTab === 'analytics' && (
                 <div className="space-y-8">
                   <AnalyticsCharts sessions={sessions} questions={questions} />
 
@@ -1260,8 +1282,22 @@ export default function App() {
                           type="number"
                           min="5"
                           max="180"
-                          value={settings.pomodoroWorkDuration}
-                          onChange={(e) => handleSaveSettings({ ...settings, pomodoroWorkDuration: Math.max(5, parseInt(e.target.value) || 25) })}
+                          value={localWorkDuration}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setLocalWorkDuration(val);
+                            const parsed = parseInt(val);
+                            if (!isNaN(parsed) && parsed >= 5 && parsed <= 180) {
+                              handleSaveSettings({ ...settings, pomodoroWorkDuration: parsed });
+                            }
+                          }}
+                          onBlur={() => {
+                            let parsed = parseInt(localWorkDuration);
+                            if (isNaN(parsed)) parsed = 25;
+                            const clamped = Math.min(180, Math.max(5, parsed));
+                            setLocalWorkDuration(clamped.toString());
+                            handleSaveSettings({ ...settings, pomodoroWorkDuration: clamped });
+                          }}
                           className="w-full bg-accent/20 border border-border text-xs rounded-xl px-3 py-2.5 font-medium text-foreground outline-none focus:border-indigo-500/50"
                         />
                       </div>
@@ -1272,8 +1308,22 @@ export default function App() {
                           type="number"
                           min="1"
                           max="60"
-                          value={settings.pomodoroBreakDuration}
-                          onChange={(e) => handleSaveSettings({ ...settings, pomodoroBreakDuration: Math.max(1, parseInt(e.target.value) || 5) })}
+                          value={localBreakDuration}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setLocalBreakDuration(val);
+                            const parsed = parseInt(val);
+                            if (!isNaN(parsed) && parsed >= 1 && parsed <= 60) {
+                              handleSaveSettings({ ...settings, pomodoroBreakDuration: parsed });
+                            }
+                          }}
+                          onBlur={() => {
+                            let parsed = parseInt(localBreakDuration);
+                            if (isNaN(parsed)) parsed = 5;
+                            const clamped = Math.min(60, Math.max(1, parsed));
+                            setLocalBreakDuration(clamped.toString());
+                            handleSaveSettings({ ...settings, pomodoroBreakDuration: clamped });
+                          }}
                           className="w-full bg-accent/20 border border-border text-xs rounded-xl px-3 py-2.5 font-medium text-foreground outline-none focus:border-indigo-500/50"
                         />
                       </div>
@@ -1296,10 +1346,21 @@ export default function App() {
                             step="0.5"
                             min="0.5"
                             max="24"
-                            value={((settings.dailyStudyMinutesGoal ?? 180) / 60)}
+                            value={localStudyGoal}
                             onChange={(e) => {
-                              const hrs = Math.max(0.1, parseFloat(e.target.value) || 3);
-                              handleSaveSettings({ ...settings, dailyStudyMinutesGoal: Math.round(hrs * 60) });
+                              const val = e.target.value;
+                              setLocalStudyGoal(val);
+                              const parsed = parseFloat(val);
+                              if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 24) {
+                                handleSaveSettings({ ...settings, dailyStudyMinutesGoal: Math.round(parsed * 60) });
+                              }
+                            }}
+                            onBlur={() => {
+                              let parsed = parseFloat(localStudyGoal);
+                              if (isNaN(parsed)) parsed = 3;
+                              const clamped = Math.min(24, Math.max(0.5, parsed));
+                              setLocalStudyGoal(clamped.toString());
+                              handleSaveSettings({ ...settings, dailyStudyMinutesGoal: Math.round(clamped * 60) });
                             }}
                             className="w-full bg-accent/20 border border-border text-xs rounded-xl pl-3 pr-14 py-2.5 font-medium text-foreground outline-none focus:border-indigo-500/50"
                           />
@@ -1314,8 +1375,22 @@ export default function App() {
                             type="number"
                             min="1"
                             max="500"
-                            value={settings.dailyQuestionsSolvedGoal ?? 30}
-                            onChange={(e) => handleSaveSettings({ ...settings, dailyQuestionsSolvedGoal: Math.max(1, parseInt(e.target.value) || 30) })}
+                            value={localQuestionGoal}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setLocalQuestionGoal(val);
+                              const parsed = parseInt(val);
+                              if (!isNaN(parsed) && parsed >= 1 && parsed <= 500) {
+                                handleSaveSettings({ ...settings, dailyQuestionsSolvedGoal: parsed });
+                              }
+                            }}
+                            onBlur={() => {
+                              let parsed = parseInt(localQuestionGoal);
+                              if (isNaN(parsed)) parsed = 30;
+                              const clamped = Math.min(500, Math.max(1, parsed));
+                              setLocalQuestionGoal(clamped.toString());
+                              handleSaveSettings({ ...settings, dailyQuestionsSolvedGoal: clamped });
+                            }}
                             className="w-full bg-accent/20 border border-border text-xs rounded-xl pl-3 pr-20 py-2.5 font-medium text-foreground outline-none focus:border-indigo-500/50"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">Questions</span>
@@ -1365,7 +1440,8 @@ export default function App() {
                 </div>
               )}
             </motion.div>
-          </AnimatePresence>
+          )}
+        </AnimatePresence>
 
 
           {/* DYNAMIC FEEDBACK BOOK FOR CLIENT */}

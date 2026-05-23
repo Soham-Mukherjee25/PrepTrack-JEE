@@ -10,15 +10,38 @@ interface TimerSectionProps {
 }
 
 export default function TimerSection({ settings, onSaveSession, currentSessionsTodayCount }: TimerSectionProps) {
-  const [mode, setMode] = useState<StudyMode>('normal');
-  const [sessionNameInput, setSessionNameInput] = useState('');
-  const [sessionSelected, setSessionSelected] = useState('Session Auto');
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(0); // in seconds
+  const [mode, setMode] = useState<StudyMode>(() => {
+    return (localStorage.getItem('preptrack_timer_mode') as StudyMode) || 'normal';
+  });
+  const [sessionNameInput, setSessionNameInput] = useState(() => {
+    return localStorage.getItem('preptrack_timer_nameInput') || '';
+  });
+  const [sessionSelected, setSessionSelected] = useState(() => {
+    return localStorage.getItem('preptrack_timer_selected') || 'Session Auto';
+  });
+  const [isRunning, setIsRunning] = useState(() => {
+    return localStorage.getItem('preptrack_timer_isRunning') === 'true';
+  });
+  const [isPaused, setIsPaused] = useState(() => {
+    return localStorage.getItem('preptrack_timer_isPaused') === 'true';
+  });
+  const [timeElapsed, setTimeElapsed] = useState(() => {
+    const savedTime = parseInt(localStorage.getItem('preptrack_timer_timeElapsed') || '0', 10);
+    const savedIsRunning = localStorage.getItem('preptrack_timer_isRunning') === 'true';
+    const savedIsPaused = localStorage.getItem('preptrack_timer_isPaused') === 'true';
+    const savedLastTS = parseInt(localStorage.getItem('preptrack_timer_lastTS') || '0', 10);
+    
+    if (savedIsRunning && !savedIsPaused && savedLastTS > 0) {
+      const deltaSec = Math.floor((Date.now() - savedLastTS) / 1000);
+      return savedTime + deltaSec;
+    }
+    return savedTime;
+  });
   
   // Pomodoro states
-  const [pomodoroStage, setPomodoroStage] = useState<'work' | 'break'>('work');
+  const [pomodoroStage, setPomodoroStage] = useState<'work' | 'break'>(() => {
+    return (localStorage.getItem('preptrack_timer_pomodoroStage') as 'work' | 'break') || 'work';
+  });
   
   // Audio & Notification Custom Configurations
   const [alarmSound, setAlarmSound] = useState<'chime' | 'beep' | 'zen'>('chime');
@@ -31,12 +54,83 @@ export default function TimerSection({ settings, onSaveSession, currentSessionsT
   } | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const sessionStartTimeRef = useRef<number>(0);
-  const totalPausedTimeRef = useRef<number>(0);
-  const pauseStartTimeRef = useRef<number>(0);
+  const sessionStartTimeRef = useRef<number>(
+    parseInt(localStorage.getItem('preptrack_timer_startTimeRef') || '0', 10) || Date.now()
+  );
+  const totalPausedTimeRef = useRef<number>(
+    parseInt(localStorage.getItem('preptrack_timer_totalPausedTimeRef') || '0', 10) || 0
+  );
+  const pauseStartTimeRef = useRef<number>(
+    parseInt(localStorage.getItem('preptrack_timer_pauseStartTimeRef') || '0', 10) || 0
+  );
 
   const alarmSoundRef = useRef(alarmSound);
   const isMutedRef = useRef(isMuted);
+
+  // Persistence to localstorage on every update reactive stream
+  useEffect(() => {
+    localStorage.setItem('preptrack_timer_mode', mode);
+    localStorage.setItem('preptrack_timer_nameInput', sessionNameInput);
+    localStorage.setItem('preptrack_timer_selected', sessionSelected);
+    localStorage.setItem('preptrack_timer_isRunning', isRunning.toString());
+    localStorage.setItem('preptrack_timer_isPaused', isPaused.toString());
+    localStorage.setItem('preptrack_timer_timeElapsed', timeElapsed.toString());
+    localStorage.setItem('preptrack_timer_pomodoroStage', pomodoroStage);
+    localStorage.setItem('preptrack_timer_startTimeRef', sessionStartTimeRef.current.toString());
+    localStorage.setItem('preptrack_timer_totalPausedTimeRef', totalPausedTimeRef.current.toString());
+    localStorage.setItem('preptrack_timer_pauseStartTimeRef', pauseStartTimeRef.current.toString());
+    localStorage.setItem('preptrack_timer_lastTS', Date.now().toString());
+  }, [mode, sessionNameInput, sessionSelected, isRunning, isPaused, timeElapsed, pomodoroStage]);
+
+  // Screen Wake Lock API to prevent lockscreen sleep when stopwatch is ticking
+  const wakeLockRef = useRef<any>(null);
+
+  useEffect(() => {
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          if (wakeLockRef.current) {
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+          }
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+          console.log('Screen Wake Lock acquired successfully');
+        } catch (err) {
+          console.warn('Failed to acquire Screen Wake Lock:', err);
+        }
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (wakeLockRef.current) {
+        try {
+          await wakeLockRef.current.release();
+          wakeLockRef.current = null;
+          console.log('Screen Wake Lock released');
+        } catch (err) {
+          console.warn('Failed to release Screen Wake Lock:', err);
+        }
+      }
+    }
+
+    if (isRunning && !isPaused) {
+      requestWakeLock();
+      
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && isRunning && !isPaused) {
+          requestWakeLock();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        releaseWakeLock();
+      };
+    } else {
+      releaseWakeLock();
+    }
+  }, [isRunning, isPaused]);
 
   useEffect(() => {
     alarmSoundRef.current = alarmSound;
